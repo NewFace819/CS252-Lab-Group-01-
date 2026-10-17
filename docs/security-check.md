@@ -20,15 +20,13 @@ local and remote branches (11 commits: `main`, `wii-init`,
 
 ## Gitleaks
 
-Not run: `gitleaks` is not installed on the reviewer's machine. The manual
-pattern scan above was used instead. Before closing the issue, someone with
-gitleaks should run:
+Tool: gitleaks 8.30.1 (installed via winget), default ruleset.
 
 ```bash
-gitleaks detect --source . --log-opts="--all" --redact
+gitleaks detect --source . --log-opts="--all" --redact -v
 ```
 
-and append the result here.
+Result: 8 commits scanned (~21 KB), **no leaks found** (exit code 0).
 
 ## Findings
 
