@@ -108,6 +108,23 @@ To provide a sample query:
 python -m assistant "where is the IT helpdesk?"
 ```
 
+### Help and available commands
+
+Show the assistant's capabilities and example questions:
+
+```bash
+python -m assistant "help"
+```
+
+The help response explains office location/opening-hour lookup, the office-list
+command, Vietnamese input with or without accents, and how to leave interactive
+mode. `trợ giúp` and `hướng dẫn` also show help.
+
+For an interactive session, run `python -m assistant`, type `help`, then enter a
+question or `list offices`. Type `quit` or `exit` to leave. Help works even before
+office data is available; live lookup and listing require `data/offices.csv` to
+contain office records.
+
 The commands above follow the current starter project's entry point. Update this section when the Fitlens application entry point and features are implemented.
 
 ## Running Tests
