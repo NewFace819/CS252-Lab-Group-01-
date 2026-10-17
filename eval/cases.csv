@@ -1,0 +1,17 @@
+question,expected,category
+hi,"Hello! Ask me where an office is, or when it opens.",normal
+xin chao,"Hello! Ask me where an office is, or when it opens.",normal
+help,"I can look up campus office locations and opening hours.",normal
+huong dan,"I can look up campus office locations and opening hours.",normal
+list offices,Available offices:,normal
+Where is the Training Office?,Training Office,normal
+Thu vien o dau?,Library,normal
+When does the IT Helpdesk open?,IT Helpdesk,normal
+Phong cong tac sinh vien o phong nao?,Student Affairs,normal
+"   WHERE   IS   THE   TRAINING   OFFICE???   ",Training Office,edge
+phong dao tao mo cua khi nao,Training Office,edge
+ctsv,Student Affairs,edge
+"   ",Please type a question.,edge
+What is the weather in Hanoi today?,I don't know that yet.,out-of-scope
+Can you write my homework essay?,I don't know that yet.,out-of-scope
+What is on the cafeteria menu?,I don't know that yet.,out-of-scope

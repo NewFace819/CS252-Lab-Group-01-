@@ -5,8 +5,8 @@ def test_greeting():
     assert "Hello" in reply("hi")
 
 
-def test_office_lookup():
-    assert "I.101" in reply("Where is the Training Office?")
+def test_office_lookup(sample_offices):
+    assert "I.101" in reply("Where is the Training Office?", sample_offices)
 
 
 def test_unknown():
