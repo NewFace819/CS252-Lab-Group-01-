@@ -69,4 +69,20 @@ def reply(message: str, offices: dict[str, dict[str, str]] | None = None) -> str
         names = (canonical, normalize(row["name"]), *OFFICE_ALIASES.get(canonical, ()))
         if any(contains_phrase(text, candidate) for candidate in names):
             return f"{row['name']}: room {row['room']}, open {row['hours']}."
+    # Full names and aliases take priority. Partial names must identify one office.
+    generic_words = {"office", "offices", "department", "center", "centre", "unit"}
+    matches = []
+    for row in offices.values():
+        words = normalize(row["name"]).split()
+        if any(
+            len(word) > 3 and word not in generic_words and contains_phrase(text, word)
+            for word in words
+        ):
+            matches.append(row)
+    if len(matches) == 1:
+        row = matches[0]
+        return f"{row['name']}: room {row['room']}, open {row['hours']}."
+    if matches:
+        names = ", ".join(row["name"] for row in matches)
+        return f"Please specify an office: {names}."
     return "I don't know that yet. Type 'help' for examples or 'list offices' for office names."
