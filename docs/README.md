@@ -9,7 +9,8 @@ The purpose of this directory is to keep project documentation organized, access
 ```text
 docs/
 ├── README.md     # Overview of the documentation directory
-└── team.md       # Team member names, member numbers, and roles
+├── team.md       # Team member names, member numbers, and roles
+└── ui_mockup.png # UI design mockup for Fitlens Gym & Fitness Assistant
 ```
 
 Additional documents may be added as the project develops.
@@ -19,6 +20,10 @@ Additional documents may be added as the project develops.
 ### Team Information
 
 See [team.md](team.md) for the project team members, their member numbers, and their assigned responsibilities.
+
+### UI Mockup & Architecture Plan
+
+See [ui_mockup.png](ui_mockup.png) for the visual mockup of the Fitlens gym and fitness assistant interface. Detailed architectural specifications and backend calling plans are documented in [ui/README.md](../ui/README.md).
 
 ### Project Setup and Usage
 
