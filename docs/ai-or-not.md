@@ -1,11 +1,31 @@
 # Which Questions Need AI? (draft)
 
 Fitlens answers with rules first (`src/assistant/rules.py`) and only calls an AI model when the
-rules cannot help (see [ai-interface.md](ai-interface.md)). This table shows where that line is.
+routing rules in [ai-interface.md](ai-interface.md) §1 say so. This page gives examples on each
+side of that line.
 
 **Rule of thumb:** if the answer is one fixed row of our data or a fixed reply, rules are enough.
-If the bot must understand intent, combine several sources or explain something, it needs AI —
-and even then the AI may only use our data.
+If the bot must understand a free-form request, combine several rows or explain something, it is
+a **candidate** for AI — and even then the AI may only use our data.
+
+"Candidate" matters: some of these questions are AI-assisted only because **today's rules do
+not support them**, not because they cannot be solved deterministically. Comparing closing times
+(Q12, Q19), checking a weekday (Q16) or listing all hours (Q17) could be done with structured
+hours data and normal code. The team should pick the simplest option that can be tested, at the
+lowest cost and latency.
+
+## Test fixture
+
+Results below were checked by running each question through `reply()` with these four sample rows.
+They are **not** verified campus data. The real `data/offices.csv` is currently empty, so Q5–Q9
+are not yet proven with real data.
+
+| name | room | hours |
+| --- | --- | --- |
+| Training Office | I.101 | 7:30-16:30 |
+| Library | C.201 | 7:30-20:00 |
+| Student Affairs | B.1 | 8-16 |
+| IT Helpdesk | E.1 | 8-17 |
 
 ## 10 questions that do NOT need AI
 
@@ -22,32 +42,37 @@ and even then the AI may only use our data.
 | 9 | IT helpdesk room? | Office name match; whole-word matching avoids false hits like "visit". |
 | 10 | good morning | Fixed greeting; an AI call would only add cost and latency. |
 
-## 10 questions that DO need AI
+## 10 candidate AI-assisted questions
 
-| # | Question | Reason |
-| --- | --- | --- |
-| 11 | I lost my student card, what should I do? | Needs a short multi-step answer, not a single data lookup. |
-| 12 | So sánh giờ mở cửa thư viện và phòng CNTT giúp mình | Combines two rows; rules would answer only the first office they match. |
-| 13 | Where can I print documents on campus? | Intent ("printing") has no keyword in our data; the bot must infer the right office. |
-| 14 | Mình cần xin giấy xác nhận sinh viên thì đi đâu? | No office name in the question; must map the request to Student Affairs. |
-| 15 | What is the difference between Student Affairs and the Training Office? | Asks for an explanation; rules would wrongly reply with one office's room. |
-| 16 | Is the library open on Sunday? | Must reason over the hours text and answer yes/no; rules only print the hours. |
-| 17 | Summarize the opening hours of all offices in one sentence. | Summarizing several rows into new text. |
-| 18 | My Wi-Fi password does not work, who can help? | Problem description without an office name; must route to IT Helpdesk. |
-| 19 | Thư viện với phòng đào tạo, chỗ nào đóng cửa muộn hơn? | Comparison and ordering across two rows. |
-| 20 | I'm a new student, what should I do in my first week? | Open-ended; needs to plan an answer from several sources. |
+"Today's rules" is what `reply()` returns with the fixture above. "Expected" is the correct
+behaviour once the routing in [ai-interface.md](ai-interface.md) is built.
+
+| # | Question | Why rules are not enough today | Expected |
+| --- | --- | --- | --- |
+| 11 | I lost my student card, what should I do? | Asks for a procedure; rules return "I don't know". | Answer only if the context has an official student-card procedure; otherwise abstain. |
+| 12 | So sánh giờ mở cửa thư viện và phòng CNTT giúp mình | Two offices; rules return only Library. Could be deterministic with structured hours. | Compare both opening hours, citing both rows. |
+| 13 | Where can I print documents on campus? | No office name or keyword in our data; rules return "I don't know". | Point to an office only if the context has an official printing-service source; otherwise abstain. |
+| 14 | Mình cần xin giấy xác nhận sinh viên thì đi đâu? | No office name; our schema (name/room/hours) has no list of services. | Route to an office only if the context has an official source for this service; otherwise abstain. |
+| 15 | What is the difference between Student Affairs and the Training Office? | Asks for an explanation; rules wrongly reply with Training Office's room. | Explain only from official descriptions in the context; with today's schema, abstain. |
+| 16 | Is the library open on Sunday? | Needs a yes/no about one day; rules only print Library's hours. Could be deterministic with structured opening days. | Yes/no based on the Library row; abstain if the hours do not mention days. |
+| 17 | Summarize the opening hours of all offices in one sentence. | Combines all rows; rules return "I don't know". A template could also do it. | One sentence covering every office, citing all rows. |
+| 18 | My Wi-Fi password does not work, who can help? | Problem description without an office name; rules return "I don't know". | Route to IT Helpdesk only if the context says it handles Wi-Fi; otherwise abstain. |
+| 19 | Thư viện với phòng đào tạo, chỗ nào đóng cửa muộn hơn? | Two offices; rules return only Training Office. Could be deterministic with structured hours. | "Library closes later (20:00 vs 16:30)", citing both rows. |
+| 20 | I'm a new student, what should I do in my first week? | Open-ended; rules return "I don't know". | Short answer from available sources only; abstain on anything not in our data. |
 
 ## Notes
 
-- Questions 1–10 assume `data/offices.csv` contains the Training Office, Library,
-  Student Affairs and IT Helpdesk rows.
-- For questions 11–20, the AI may only use the context the backend passes in. If our data does
-  not contain the answer (for example the student card procedure in #11), the correct reply is
-  "I don't have that information yet", not a guess.
-- Questions 12, 15, 16 and 19 contain an office name, so today's rules return an answer —
-  but the wrong kind (one office's room and hours). Before calling the AI, the backend must
-  notice comparison or explanation words ("so sánh", "difference", "open on Sunday",
-  "muộn hơn"), not only "no match".
-- Out-of-scope questions (for example "what is the meaning of life") need neither path:
-  the bot should politely say it only covers campus offices.
-- These 20 questions can seed the benchmark in `eval/cases.csv` (issue #14).
+- **Matched is not answered.** Q12, Q15, Q16 and Q19 contain an office name, so today's rules
+  return one office's room and hours — the wrong kind of answer, not "unknown". The routing rule
+  in [ai-interface.md](ai-interface.md) §1 (intent check before lookup) sends them to the AI path.
+  The trigger words there are examples, not a complete list; equivalent phrasings and questions
+  about several offices need the same treatment.
+- Partial-name matching (issue #8) may increase false matches. Re-run this table when it is
+  merged.
+- **Abstain is a correct answer.** If our data does not contain the answer, the correct reply is
+  "I don't have that information yet", not a guess from the model's general knowledge.
+- Out-of-scope questions (for example "what is the meaning of life") need neither path: the bot
+  should politely say it only covers campus offices.
+- **For the benchmark (issue #14):** reuse the fixture rows, the question, and the "Expected"
+  column — not only a "needs AI" label — so the evaluation can tell a correct answer, a correct
+  abstention and a made-up answer apart.
