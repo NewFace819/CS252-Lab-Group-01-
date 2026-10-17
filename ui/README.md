@@ -1,29 +1,27 @@
 # Fitlens — UI Component Plan & Specification
 
-This document outlines the user interface architecture, implementation plan, and backend communication contract for **Fitlens**, an intelligent virtual assistant tailored for **gym goers and fitness enthusiasts**.
+This document outlines the user interface architecture, implementation plan, and backend communication contract for **Fitlens**, a campus smart virtual assistant designed for university students, faculty, and visitors.
 
 ---
 
 ## 1. Overview & Vision
 
-**Fitlens** is designed to be a personal gym coach and fitness companion. Lifters and athletes can interact with Fitlens to:
-- **Exercise Technique & Form Check**: Get cues and biomechanical checkpoints for compound movements (e.g., squats, deadlifts, bench press).
-- **Workout Planning**: Generate and customize training splits (e.g., Push-Pull-Legs, Upper-Lower, Full Body) based on fitness goals and schedule.
-- **Nutrition & Macro Guidance**: Calculate caloric and macronutrient targets (protein, carbs, fats) for cutting, bulking, or body recomposition.
-- **Warmup & Mobility**: Receive targeted warm-up sequences and injury-prevention advice.
+**Fitlens** helps students navigate campus life and academic procedures by answering common inquiries quickly and reliably:
+- **Campus Office Directory**: Look up room numbers, building locations, and opening hours for key departments (e.g., Training Office / Academic Affairs, Student Affairs, Library, IT Helpdesk).
+- **Academic Procedures & Guidelines**: Inquire about enrollment, course registration deadlines, withdrawal policies, and student support services.
+- **Bilingual Accessibility**: Full support for queries in both **English** and **Vietnamese** (with or without diacritics).
+- **Evidence-Based Transparency**: Verified citations indicating the official campus directory or handbook source for every answer (see [`docs/ui-sources.md`](../docs/ui-sources.md)).
 
-The `ui/` module provides the presentation layer that captures user queries, visualizes exercise data, and delivers an intuitive, lifter-friendly experience.
+The `ui/` module provides the presentation layer that captures user queries, visualizes campus resources, and delivers an intuitive, student-friendly experience.
 
 ---
 
 ## 2. Technology Stack & Framework
 
 For the prototype and initial delivery phases, the UI is built using **Streamlit**:
-- **Python-Native**: Direct and seamless interoperability with the core Python backend (`src/assistant/`) without requiring complex build steps or node toolchains.
-- **Reactive & Interactive**: Built-in chat widgets (`st.chat_message`, `st.chat_input`), session state management, and rich markdown/metrics rendering.
-- **Fast Iteration**: Allows quick prototyping of fitness calculators, exercise visualizers, and conversational flows.
-
-*Future phases may introduce a decoupled React / Next.js web client or mobile application connecting via REST/WebSocket APIs.*
+- **Python-Native**: Direct and seamless interoperability with the core Python backend (`src/assistant/`) without requiring separate build steps or Node toolchains.
+- **Reactive Chat Components**: Built-in chat interface elements (`st.chat_message`, `st.chat_input`), session state management, and rich markdown rendering.
+- **Fast Iteration**: Rapid prototyping of campus directories, quick-action suggestion chips, and responsive layouts.
 
 ---
 
@@ -36,73 +34,66 @@ For the prototype and initial delivery phases, the UI is built using **Streamlit
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Lifter as Gym User
+    actor Student as University Student
     participant UI as Streamlit UI (ui/app.py)
     participant State as st.session_state
-    participant Controller as Backend Adapter
-    participant Backend as Assistant Engine (src/assistant/)
-    participant Data as Knowledge Base / Datasets (data/)
+    participant Adapter as UI Backend Adapter
+    participant Backend as Rules Engine (src/assistant/rules.py)
+    participant Data as Campus Data (data/offices.csv)
 
-    Lifter->>UI: Types query or clicks prompt pill (e.g., "Deadlift form tips")
-    UI->>State: Store user message in conversation history
-    UI->>Controller: Dispatch request payload (query, user_profile, session_id)
-    activate Controller
-    Controller->>Backend: Call backend inference/rules API (e.g., reply(query, context))
+    Student->>UI: Types query or clicks prompt chip (e.g., "Where is Training Office?")
+    UI->>State: Store student message in conversation history
+    UI->>Adapter: Dispatch sanitized query string
+    activate Adapter
+    Adapter->>Backend: Invoke reply(message)
     activate Backend
-    Backend->>Data: Query exercise cues, split templates, or macro formulas
-    Data-->>Backend: Return reference data
-    Backend-->>Controller: Return structured AssistantResponse
+    Backend->>Backend: Normalize text (strip accents, punctuation, case)
+    Backend->>Data: Match against office aliases & load row data
+    Data-->>Backend: Return office details {name, room, hours}
+    Backend-->>Adapter: Return formatted response string
     deactivate Backend
-    Controller-->>UI: Return formatted markdown and exercise cards
-    deactivate Controller
+    Adapter-->>UI: Return response to UI thread
+    deactivate Adapter
     UI->>State: Append assistant response to history
-    UI->>Lifter: Render message bubble with form cues and follow-up chips
+    UI->>Student: Render message bubble with office details & follow-up suggestions
 ```
 
 ---
 
 ### 3.2 Integration Mechanisms
 
-The UI connects to the backend through a modular adapter pattern, supporting two progressive integration modes:
+The UI communicates with the assistant backend through a modular adapter pattern:
 
-#### Mode A: Direct In-Process Python Call (Current Development & Monolith)
-In local development, the UI directly imports the assistant interface from `src/assistant/`:
+#### Mode A: Direct In-Process Python Call (Current Monolith Architecture)
+In local development, the UI directly imports the assistant backend:
 
 ```python
-# ui/adapter.py (conceptual interface)
-from assistant.rules import reply  # or assistant.engine.get_advice
+# ui/app.py
+from assistant.rules import reply, load_offices
 
 
-def call_assistant(message: str, user_profile: dict | None = None) -> str:
-    """Pass user input to the backend engine and return the response."""
-    # 1. Sanitize and trim input
-    clean_message = message.strip()
-    if not clean_message:
-        return "Please enter a fitness question or select a topic above."
+def handle_user_query(query: str) -> str:
+    """Pass user input directly to the core rules engine."""
+    clean_query = query.strip()
+    if not clean_query:
+        return "Please type a question."
 
-    # 2. Invoke the backend service
-    response = reply(clean_message)
-    return response
+    # Direct call to the backend responder
+    return reply(clean_query)
 ```
 
-#### Mode B: HTTP / REST Client (Decoupled Microservice)
-When the backend is deployed as an API service (e.g., FastAPI), the UI switches seamlessly to an HTTP client:
+#### Mode B: HTTP / REST Client (Future Microservice Architecture)
+When the backend evolves into a standalone API service (e.g., FastAPI), the UI switches to an asynchronous HTTP client:
 
 ```python
 import requests
 
-BACKEND_API_URL = "http://localhost:8000/api/v1/chat"
+API_ENDPOINT = "http://localhost:8000/api/v1/chat"
 
 
-def call_backend_api(
-    query: str, session_id: str, profile: dict
-) -> dict:
-    payload = {
-        "query": query,
-        "session_id": session_id,
-        "user_profile": profile,  # e.g., {"goal": "hypertrophy", "split": "PPL"}
-    }
-    response = requests.post(BACKEND_API_URL, json=payload, timeout=5.0)
+def query_backend_service(message: str, session_id: str) -> dict:
+    payload = {"message": message, "session_id": session_id}
+    response = requests.post(API_ENDPOINT, json=payload, timeout=5.0)
     response.raise_for_status()
     return response.json()
 ```
@@ -114,96 +105,84 @@ def call_backend_api(
 #### Request Payload Specification
 | Field | Type | Required | Description | Example |
 | :--- | :--- | :---: | :--- | :--- |
-| `query` | `string` | **Yes** | The user's typed question or prompt | `"Proper barbell deadlift form"` |
-| `category` | `string` | No | Target module category | `"form_check"`, `"workout_plan"`, `"nutrition"` |
-| `user_profile` | `object` | No | Lifter attributes and preferences | `{"experience": "intermediate", "goal": "strength"}` |
-| `session_id` | `string` | No | Unique session key for multi-turn chat | `"sess_lifter_001"` |
+| `message` | `string` | **Yes** | Student's question or command | `"Where is the training office?"` |
+| `language`| `string` | No | Selected language code (`"en"` or `"vi"`) | `"en"` |
+| `session_id` | `string` | No | Unique session key for multi-turn history | `"sess_student_42"` |
 
 #### Response Payload Specification
 | Field | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `reply_text` | `string` | Markdown-formatted response from assistant | `"Keep a neutral spine and hinge at the hips..."` |
-| `exercise_cues` | `list[string]` | Bulleted checklist for proper technique | `["Drive through heels", "Bar over midfoot"]` |
-| `suggested_chips`| `list[string]` | Follow-up quick prompt pills for the UI | `["Push Pull Legs split", "Warm-up routine"]` |
-| `status` | `string` | Execution status | `"success"` or `"error"` |
+| `text` | `string` | Text reply answering the student's question | `"Training Office: room I.101, open 07:30 - 16:30."` |
+| `citations` | `list[object]` | Structured official sources backing the answer | `[{"title": "Office Directory 2026", "room": "I.101"}]` |
+| `suggested_chips`| `list[string]` | Follow-up quick prompts for the UI | `["List all offices", "Library hours"]` |
 
 ---
 
 ### 3.4 State Management & Error Handling
 
 1. **Session State Persistence**:
-   - `st.session_state.messages`: Preserves conversational turns between user reruns.
-   - `st.session_state.lifter_profile`: Stores lifter preferences (experience level, target split).
+   - `st.session_state.messages`: Retains conversation history across user interactions and re-runs.
+   - `st.session_state.language`: Retains the active language preference (English / Tiếng Việt).
 2. **Graceful Fallbacks**:
-   - If the backend is loading or unavailable, the UI renders an informative warning toast (`Backend in Standby / Mock Mode`) without crashing the application.
-   - User inputs are validated to prevent empty messages or invalid payloads.
+   - If `data/offices.csv` is missing or unreadable, the backend returns a clear diagnostic message without crashing the UI.
+   - Unrecognized inputs return helpful command suggestions (`help`, `list offices`).
 
 ---
 
 ## 4. UI Layout & Visual Design
 
-The UI design is optimized for high readability, modern dark aesthetics, and rapid access during workout sessions.
+The UI provides a clean, modern layout tailored for students on desktop and mobile browsers:
 
 ### 4.1 Layout Components
 - **Sidebar**:
-  - **Brand Header**: Fitlens dumbbell icon and tagline.
-  - **Module Selector**: *Workout Plans*, *Exercise Library & Form Check*, *Nutrition Tracker*, *Progress Log*.
-  - **Muscle Group Filters**: Quick pills for *Chest*, *Back*, *Legs*, *Core*.
-  - **Backend Status Badge**: Visual indicator (`🟢 Backend Connected` or `🟡 Standby Mode`).
-- **Main Chat & Content Area**:
-  - **Topic Header**: Active subject or routine overview.
-  - **Quick Prompt Pills**: One-click common queries (`Deadlift form tips`, `Push Pull Legs split`, `Post-workout protein`, `Warm-up routine`).
-  - **Chat Message Feed**: Styled message bubbles distinguishing user inquiries and coach responses.
-  - **Floating Input Box**: Convenient chat bar with quick submission.
+  - **Brand Header**: Fitlens logo and title.
+  - **Quick Navigation**: Chat Assistant, Campus Directory, Student Resources, Settings.
+  - **Campus Directory Accordion**: Expandable view of offices (Training Office, Student Affairs, Library, IT Helpdesk).
+  - **Language Selector**: English / Tiếng Việt toggle.
+  - **Backend Status Indicator**: `🟢 Backend: Connected (src.assistant.rules)`.
+- **Main Chat Feed**:
+  - **Header Banner**: Fitlens Campus Chat greeting.
+  - **Quick Suggestion Chips**: One-click pills (`📍 Where is Training Office?`, `📚 Library opening hours`, `📋 List available offices`, `ℹ️ Help / Hướng dẫn`).
+  - **Conversation Feed**: Distinct message bubbles for student inquiries and assistant answers.
+  - **Bottom Chat Input**: Floating input bar with send button.
 
 ---
 
 ## 5. UI Mockup
 
-A visual mockup representing the target user interface is stored in [`docs/ui_mockup.png`](../docs/ui_mockup.png):
+A visual mockup of the student virtual assistant interface is stored in [`docs/ui_mockup.png`](../docs/ui_mockup.png):
 
-![Fitlens UI Mockup](../docs/ui_mockup.png)
+![Fitlens Campus Assistant UI Mockup](../docs/ui_mockup.png)
 
-*Figure 1: High-fidelity mockup of the Fitlens Gym & Fitness AI Assistant Streamlit Interface.*
+*Figure 1: High-fidelity mockup of the Fitlens Campus Virtual Assistant interface.*
 
 ---
 
-## 6. Placeholder Page (`ui/app.py`)
+## 6. Running the UI Prototype Locally
 
-A runnable placeholder page is provided at [`ui/app.py`](app.py) to validate the component structure before complete backend feature wiring.
-
-### Running the Placeholder Locally
-
-1. Ensure the Python environment is active:
+1. Ensure your Python environment is active:
    ```bash
    # Windows PowerShell
    .venv\Scripts\Activate.ps1
    ```
-2. Run the Streamlit application:
+2. Start the Streamlit application:
    ```bash
    streamlit run ui/app.py
    ```
 3. Open your browser at `http://localhost:8501`.
 
-The placeholder page renders the brand header, sidebar navigation, quick question chips, and an interactive input field that echoes responses in mock standby mode.
-
 ---
 
-## 7. Implementation Roadmap
+## 7. Citation Design Reference
 
-| Milestone | Scope | Deliverables | Status |
-| :--- | :--- | :--- | :---: |
-| **Phase 1: Setup & Plan (Size S)** | UI architecture, backend call plan, mockup, placeholder page | `ui/README.md`, `ui/app.py`, `docs/ui_mockup.png` | **Complete** |
-| **Phase 2: Core Assistant Wiring** | Connect `ui/app.py` to fitness rules and CSV knowledge base | Interactive Q&A for workout splits & exercises | Planned |
-| **Phase 3: Form Check & Calculators** | Add 1RM calculator, macro target estimator, form check checklists | Interactive Streamlit widgets and charts | Planned |
-| **Phase 4: Multi-Modal Integration** | Integrate pose detection or video analysis for squat/deadlift form | Video uploader and visual feedback overlay | Future |
+For details on how official sources and citations are displayed in the UI (inline citation badges, hover tooltips, and source cards), see [`docs/ui-sources.md`](../docs/ui-sources.md).
 
 ---
 
 ## 8. Definition of Done Compliance
 
-- [x] Comprehensive plan created in `ui/README.md`.
-- [x] Clear explanation of how the UI calls the backend (sequence diagram, calling mechanisms, request/response schemas).
+- [x] Comprehensive plan documented in `ui/README.md`.
+- [x] Explanation of how the UI calls the backend (sequence diagram, adapter logic, data contracts).
 - [x] Streamlit placeholder page implemented in `ui/app.py`.
-- [x] High-fidelity UI mockup provided in `docs/ui_mockup.png`.
-- [x] Entire document written in clear, professional English.
+- [x] Visual mockup provided in `docs/ui_mockup.png` and linked.
+- [x] Written 100% in professional English.
