@@ -207,7 +207,7 @@ Open the Command Palette with `Ctrl+Shift+P`, select **Python: Select Interprete
 
 All team members are encouraged to contribute through focused branches and Pull Requests. Changes should be tested before they are submitted for review.
 
-Do not commit virtual environments, API keys, passwords, or other secrets to the repository.
+Do not commit virtual environments, API keys, passwords, or other secrets to the repository. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and the secret-handling rules; copy `.env.example` to `.env` for local settings.
 
 ## License
 
