@@ -8,10 +8,10 @@ directory. Never invent room numbers or opening hours to fill missing records.
 
 | File | Source and current status | Data owner | Update frequency |
 | --- | --- | --- | --- |
-| `offices.csv` | Empty in the Lab 1 setup (`v0.1-setup`). No external source URL or verified office records have been supplied. Adding public office data is tracked in [issue #10](https://github.com/NewFace819/CS252-Lab-Group-01-/issues/10). | `@npdwuy`, assigned to issue #10; documentation maintained by `@vbthg` under issue #11. | Update when an official source changes or an error is confirmed; recheck sources before each data PR and each lab/milestone submission. |
+| `offices.csv` | Six public office records for the Nguyen Van Cu campus (227 Nguyen Van Cu St.), copied from the official pages listed in the source register below. Added in [issue #10](https://github.com/NewFace819/CS252-Lab-Group-01-/issues/10). | `@npdwuy`, assigned to issue #10; documentation maintained by `@vbthg` under issue #11. | Update when an official source changes or an error is confirmed; recheck sources before each data PR and each lab/milestone submission. |
 
-The update frequency is the maintenance policy for this dataset, not a claim
-that the currently empty file has already been checked against official sources.
+The update frequency is the maintenance policy for this dataset. Every record in
+`offices.csv` is backed by a page in the source register below.
 If ownership changes, update this table in the same PR that changes the assignment.
 
 ## CSV format
@@ -41,11 +41,18 @@ If different pages support location and hours, record both.
 
 | Office / records covered | Public source URL and publisher | Fields supported | Accessed / verified on | Verified by |
 | --- | --- | --- | --- | --- |
-| None yet: `offices.csv` is empty. | No source supplied. | No verified fields. | Not yet verified. | Pending issue #10 (`@npdwuy`). |
+| Library | https://glib.hcmus.edu.vn/contact (HCMUS Library) | Location (Building I, 9th and 10th floor) and hours | 2026-10-22 | `@npdwuy` |
+| Special Programs Office | https://www.ctda.hcmus.edu.vn/vi/contact/ (FIT, VNUHCM-US program office) | Room I.53 (Building I, 5th floor) and hours Mon-Fri 08:00-17:00 | 2026-10-22 | `@npdwuy` |
+| Faculty of Information Technology Office | https://www.fit.hcmus.edu.vn/tin-tuc/d/thong-bao-ve-van-phong-khoa-cong-nghe-thong-tin (Faculty of IT notice dated 2025-06-06) | Room I.53 (Building I) and hours Mon-Fri 08:00-12:00, 13:30-17:00 | 2026-10-22 | `@npdwuy` |
+| Testing and Quality Assurance Office | https://ktdbcl.hcmus.edu.vn/index.php (HCMUS Testing and Quality Assurance Office) | Hours Mon-Fri 07:30-11:30, 13:30-17:00. The page gives no room number, so `room` records the gap. | 2026-10-22 | `@npdwuy` |
+| Information and Communications Office | https://tuyensinh.hcmus.edu.vn/lien-he/ (HCMUS admissions portal) | Room F02. The page lists only the hotline hours (08:00-17:00), so `hours` says so. | 2026-10-22 | `@npdwuy` |
+| Inspection and Legal Office | https://ttpc.hcmus.edu.vn/ (HCMUS Inspection and Legal Office) | Room F107. The page gives no hours, so `hours` records the gap. | 2026-10-22 | `@npdwuy` |
 
 The room `I.101` appearing in tests is a starter expectation, not source evidence
 for a real campus location. Synthetic test records belong in tests and must be
 labelled as synthetic; do not copy them into this source register as verified data.
+Where a source does not publish a room or opening hours, the CSV says so instead of
+guessing; fill the gap when an official page or notice provides the value.
 
 ## Update and review procedure
 
@@ -60,6 +67,3 @@ labelled as synthetic; do not copy them into this source register as verified da
 4. Open a PR linking the data issue. A teammate verifies the source register and
    results before approval and merge, following the team's
    [Definition of Done](../lab02/templates/DEFINITION_OF_DONE.md).
-
-This documentation change adds no office records and makes no claim that issue
-#10 or real-data validation has been completed.
