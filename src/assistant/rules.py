@@ -16,6 +16,13 @@ OFFICE_ALIASES = {
     "student affairs": ("phong cong tac sinh vien", "cong tac sinh vien", "ctsv"),
     "library": ("thu vien",),
     "it helpdesk": ("it", "helpdesk", "ho tro cntt", "phong cntt"),
+    "special programs office": ("van phong cac chuong trinh dao tao theo de an",),
+    "faculty of information technology office": (
+        "van phong khoa cong nghe thong tin", "van phong khoa cntt",
+    ),
+    "testing and quality assurance office": ("phong khao thi va dam bao chat luong",),
+    "information and communications office": ("phong thong tin truyen thong",),
+    "inspection and legal office": ("phong thanh tra phap che", "thanh tra phap che"),
 }
 HELP_TEXT = (
     "I can look up campus office locations and opening hours.\n"
